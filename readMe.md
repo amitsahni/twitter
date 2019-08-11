@@ -5,31 +5,26 @@
 To set `Configuration` regarding Twitter Key , Twitter Secret
 
 ```kotlin
-TwitterConfiguration.keys(TWITTER_KEY, TWITTER_SECRET)
-            .isDebug(BuildConfig.DEBUG)
-            .config(applicationContext)
+TwitterManager.config(this, true, TWITTER_KEY, TWITTER_SECRET)
 ```
 
 `Login Sample`
 
 ```kotlin
-val user = TwitterConnect.user
+val user = TwitterManager.user
             if (user == null) {
-                TwitterConnect.with()
-                    .login(this)
-                    .success {
-                        TwitterConnect.with()
-                            .profile(this@MainActivity)
-                            .success {
-                                Log.i(
-                                    localClassName,
-                                    displayName + " " + email + "" + phoneNumber
-                                )
-                                Unit
-                            }.build()
-                    }
-                    .error {
-                    }.build()
+                login(this, {
+                    profile({
+                        Log.i(
+                            localClassName + "Twitter",
+                            user?.displayName + " " + user?.email + "" + user?.phoneNumber
+                        )
+                    }, {
+                        it.printStackTrace()
+                    })
+                }, {
+                    it.printStackTrace()
+                })
             } else {
                 Log.i(localClassName + "Twitter", user.displayName + " " + user.email + "" + user.phoneNumber)
             } 
@@ -39,7 +34,7 @@ val user = TwitterConnect.user
 
 ```
 if(requestCode == TwitterAuthConfig.DEFAULT_AUTH_REQUEST_CODE){
-     TwitterConnect.get().onActivityResult(requestCode, resultCode, data);
+     TwitterManager.onActivityResult(requestCode, resultCode, data!!)
  }
 ```
 

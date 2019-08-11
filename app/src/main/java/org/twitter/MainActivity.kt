@@ -2,11 +2,12 @@ package org.twitter
 
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.TextView
-import com.twitter.TwitterConfiguration
-import com.twitter.TwitterConnect
+import androidx.appcompat.app.AppCompatActivity
+import com.twitter.TwitterManager
+import com.twitter.login
+import com.twitter.profile
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -19,30 +20,25 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        TwitterConfiguration.keys(TWITTER_KEY, TWITTER_SECRET)
-            .isDebug(BuildConfig.DEBUG)
-            .config(applicationContext)
+
 
         googleTw.setOnClickListener {
-            val user = TwitterConnect.user
+            val user = TwitterManager.user
             if (user == null) {
-                TwitterConnect.with()
-                    .login(this)
-                    .success {
-                        TwitterConnect.with()
-                            .profile(this@MainActivity)
-                            .success {
-                                Log.i(
-                                    localClassName,
-                                    displayName + " " + email + "" + phoneNumber
-                                )
-                                Unit
-                            }.build()
-                    }
-                    .error {
-                    }.build()
+                login(this, {
+                    profile({
+                        Log.i(
+                            localClassName + "Twitter",
+                            it.displayName + " " + it.email + "" + it.phoneNumber
+                        )
+                    }, {
+                        it.printStackTrace()
+                    })
+                }, {
+                    it.printStackTrace()
+                })
             } else {
-                Log.i(localClassName + "Facebook", user.displayName + " " + user.email + "" + user.phoneNumber)
+                Log.i(localClassName + "Twitter", user.displayName + " " + user.email + "" + user.phoneNumber)
             }
         }
 
@@ -51,8 +47,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        TwitterConnect.onActivityResult(requestCode, resultCode, data!!)
-
+        TwitterManager.onActivityResult(requestCode, resultCode, data!!)
     }
 
 
