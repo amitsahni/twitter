@@ -5,23 +5,22 @@
 To set `Configuration` regarding Twitter Key , Twitter Secret
 
 ```kotlin
-TwitterManager.config(this, true, TWITTER_KEY, TWITTER_SECRET)
+config(this, true, TWITTER_KEY, TWITTER_SECRET)
 ```
 
 `Login Sample`
 
 ```kotlin
-val user = TwitterManager.user
+val user = twitterUser
             if (user == null) {
                 login(this, {
-                    profile({
-                        Log.i(
-                            localClassName + "Twitter",
-                            user?.displayName + " " + user?.email + "" + user?.phoneNumber
-                        )
-                    }, {
-                        it.printStackTrace()
-                    })
+                    twitterProfile { user, exception ->
+                                            Log.d(localClassName + "Twitter", user?.displayName + " " + user?.email + "" + user?.phoneNumber)
+                                            exception?.printStackTrace()
+                                            twitterToken {
+                                                Log.d("twitterToken", it)
+                                            }
+                                        }
                 }, {
                     it.printStackTrace()
                 })
@@ -34,7 +33,7 @@ val user = TwitterManager.user
 
 ```
 if(requestCode == TwitterAuthConfig.DEFAULT_AUTH_REQUEST_CODE){
-     TwitterManager.onActivityResult(requestCode, resultCode, data!!)
+     onTwitterActivityResult(requestCode, resultCode, data!!)
  }
 ```
 
@@ -53,5 +52,5 @@ repositories {
 ```
 
 ```groovy
-implementation 'com.amitsahni:twitter:0.0.1-alpha03'
+implementation 'com.amitsahni:twitter:0.0.1-alpha04'
 ```

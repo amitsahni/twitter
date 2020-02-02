@@ -2,13 +2,42 @@ package com.twitter
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.TwitterAuthProvider
 import com.google.firebase.auth.UserInfo
 import com.twitter.sdk.android.core.*
+import com.twitter.sdk.android.core.identity.TwitterAuthClient
 
-fun login(activity: Activity, success: (TwitterSession) -> Unit, error: (TwitterException) -> Unit) {
-    TwitterManager.twitterAuthClient.authorize(activity, object : Callback<TwitterSession>() {
+val twitterAuth = FirebaseAuth.getInstance()
+val twitterAuthClient by lazy {
+    TwitterAuthClient()
+}
+
+val twitterSession: TwitterSession?
+    get() {
+        return TwitterCore.getInstance()
+                .sessionManager.activeSession
+    }
+
+val twitterUser: UserInfo?
+    get() {
+
+        twitterAuth.currentUser?.let {
+            it.providerData.forEach {
+                if (it.providerId == "twitter.com") {
+                    return it
+                }
+            }
+        }
+        return null
+    }
+
+
+fun Activity.twitterLogin(success: (TwitterSession?) -> Unit, error: (Exception) -> Unit) {
+    //val provider = OAuthProvider.newBuilder("twitter.com")
+    twitterAuthClient.authorize(this, object : Callback<TwitterSession>() {
         override fun success(result: Result<TwitterSession>?) {
             result?.data?.apply {
                 success(this)
@@ -19,10 +48,47 @@ fun login(activity: Activity, success: (TwitterSession) -> Unit, error: (Twitter
             error(e)
         }
     })
+    /*if (twitterAuth.pendingAuthResult != null) {
+        twitterAuth.pendingAuthResult
+                ?.addOnSuccessListener {
+                    success(twitterUser)
+                }?.addOnFailureListener {
+                    error(it)
+                }?.addOnCanceledListener {
+                    Log.e("addOnCanceledListener", "addOnCanceledListener")
+                }?.addOnCompleteListener {
+                    Log.e("addOnCompleteListener", "addOnCompleteListener")
+                }
+    } else {
+        twitterAuth.startActivityForSignInWithProvider(this, provider.build())
+                .addOnSuccessListener {
+                    success(twitterUser)
+                }
+                .addOnFailureListener {
+                    error(it)
+                }
+                .addOnCanceledListener {
+                    Log.e("addOnCanceledListener", "addOnCanceledListener")
+                }
+                .addOnCompleteListener {
+                    Log.e("addOnCompleteListener", "addOnCompleteListener")
+                }
+    }*/
 }
 
-fun email(success: (String) -> Unit, error: (TwitterException) -> Unit) {
-    TwitterManager.twitterAuthClient.requestEmail(TwitterManager.session, object : Callback<String>() {
+fun twitterToken(f: (String?) -> Unit) {
+    twitterAuth.currentUser?.getIdToken(true)
+            ?.addOnSuccessListener {
+                f(it.token)
+            }
+}
+
+fun onTwitterActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    twitterAuthClient.onActivityResult(requestCode, resultCode, data)
+}
+
+fun twitterEmail(success: (String) -> Unit, error: (TwitterException) -> Unit) {
+    twitterAuthClient.requestEmail(twitterSession, object : Callback<String>() {
         override fun success(result: Result<String>) {
             result.data?.apply(success)
         }
@@ -33,36 +99,38 @@ fun email(success: (String) -> Unit, error: (TwitterException) -> Unit) {
     })
 }
 
-fun profile(success: (UserInfo) -> Unit, e: (Exception) -> Unit) {
-    TwitterManager.session?.apply {
+fun twitterProfile(f: (UserInfo?, Exception?) -> Unit) {
+    twitterSession?.apply {
         val credential = TwitterAuthProvider.getCredential(
-            authToken.token,
-            authToken.secret
+                authToken.token,
+                authToken.secret
         )
-        TwitterManager.auth.signInWithCredential(credential)
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    TwitterManager.auth.currentUser?.let {
-                        it.providerData.forEach { user ->
-                            if (user.providerId.equals("twitter.com")) {
-                                success(user)
+        twitterAuth.signInWithCredential(credential)
+                .addOnCompleteListener {
+                    if (it.isSuccessful) {
+                        twitterAuth.currentUser?.let {
+                            it.providerData.forEach { user ->
+                                if (user.providerId.equals("twitter.com")) {
+                                    f(user, null)
+                                }
                             }
                         }
+                    } else {
+                        f(null, it.exception)
                     }
-                } else {
-                    it.exception?.let {
-                        e(it)
-                    }
+                }.addOnFailureListener {
+                    f(null, it)
                 }
-            }.addOnFailureListener {
-                e(it)
-            }
     }
 }
 
+fun twitterLogout() {
+    twitterAuth.signOut()
+}
+
 fun Context.config(
-    isDebug: Boolean = true,
-    consumerKey: String, secretKey: String
+        isDebug: Boolean = true,
+        consumerKey: String, secretKey: String
 ) {
     val builder = TwitterConfig.Builder(this)
     builder.debug(isDebug)

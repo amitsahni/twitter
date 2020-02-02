@@ -3,6 +3,8 @@ package org.twitter
 import androidx.multidex.MultiDexApplication
 import com.twitter.config
 
+//import com.twitter.config
+
 
 class TwitterApplication : MultiDexApplication() {
     private val TWITTER_KEY = "mpUVvDLh4EE0376IdQZfGI5vf"

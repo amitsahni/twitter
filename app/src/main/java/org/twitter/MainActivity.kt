@@ -5,9 +5,8 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.twitter.TwitterManager
-import com.twitter.login
-import com.twitter.profile
+import com.twitter.*
+//import com.twitter.onTwitterActivityResult
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -23,22 +22,25 @@ class MainActivity : AppCompatActivity() {
 
 
         googleTw.setOnClickListener {
-            val user = TwitterManager.user
+            val user = twitterUser
             if (user == null) {
-                login(this, {
-                    profile({
-                        Log.i(
-                            localClassName + "Twitter",
-                            it.displayName + " " + it.email + "" + it.phoneNumber
-                        )
-                    }, {
-                        it.printStackTrace()
-                    })
+                twitterLogin({
+                    twitterProfile { user, exception ->
+                        Log.d(localClassName + "Twitter", user?.displayName + " " + user?.email + "" + user?.phoneNumber)
+                        exception?.printStackTrace()
+                        twitterToken {
+                            Log.d("twitterToken", it)
+                        }
+                    }
                 }, {
                     it.printStackTrace()
                 })
             } else {
                 Log.i(localClassName + "Twitter", user.displayName + " " + user.email + "" + user.phoneNumber)
+                twitterToken {
+                    Log.d("twitterToken", it)
+                }
+                twitterLogout()
             }
         }
 
@@ -47,7 +49,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        TwitterManager.onActivityResult(requestCode, resultCode, data!!)
+        onTwitterActivityResult(requestCode, resultCode, data)
     }
 
 
